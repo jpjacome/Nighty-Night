@@ -49,9 +49,9 @@ def schedule_hibernate():
                 bg_label.config(image=photo)
                 bg_label.image = photo  # Store reference to avoid garbage collection
             # Show the cancel button
-            cancel_button.place(relx=0.5, rely=0.86, anchor="center")
+            cancel_button.place(relx=0.5, rely=0.96, anchor="center")
             # Show Timer
-            timer_label.place(relx=0.5, rely=0.8, anchor="center")
+            timer_label.place(relx=0.5, rely=0.91, anchor="center")
             # Hide the activate button
             button.place_forget()
             # Hide Hibernate Delay Label
@@ -73,44 +73,63 @@ def cancel_hibernate():
     # Close the application window
     window.destroy()
 
+# Add the get_current_moon_phase() function
+def get_current_moon_phase():
+    url = "https://www.moongiant.com/phase/today/"
+    soup = BeautifulSoup(requests.get(url).content, "html.parser")
+    moon_details_div = soup.find("div", id="moonDetails")
+    moon_phase_span = moon_details_div.find("span")
+    moon_phase = moon_phase_span.get_text().strip()
+    return moon_phase
 
-def get_moon_phase(date):
-    # Define the observer's location (Quito, Ecuador)
-    observer = ephem.Observer()
-    observer.lat = '-0.2295'
-    observer.long = '-78.5249'
+# Add the get_current_moon_age() function
+def get_current_moon_age():
+    url = "https://www.moongiant.com/phase/today/"
+    soup = BeautifulSoup(requests.get(url).content, "html.parser")
+    moon_details_div = soup.find("div", id="moonDetails")
+    moon_age_spans = moon_details_div.find_all("span")  # Find all span elements inside the moonDetails div
+    moon_age = moon_age_spans[2].get_text().strip()  # Get the text from the third span element (index 2)
+    return moon_age
 
-    # Define the date
-    observer.date = date
+def get_quote_of_the_day():
+    url = "https://thedailyidea.org/daily-philosophy-quote/"
+    try:
+        soup = BeautifulSoup(requests.get(url).content, "html.parser")
+        quote_of_the_day_div = soup.find("div", class_="entry-content")
+        p_elements = quote_of_the_day_div.find_all("p")
+        if len(p_elements) >= 2:
+            quote_of_the_day = p_elements[1].get_text().strip()
+            return quote_of_the_day
+        else:
+            return "Quote not available"
+    except Exception as e:
+        print("Error occurred while fetching the quote:", e)
+        return "Quote not available"
 
-    # Define the moon
-    moon = ephem.Moon()
+def get_quote_of_the_day_author():
+    url = "https://thedailyidea.org/daily-philosophy-quote/"
+    try:
+        soup = BeautifulSoup(requests.get(url).content, "html.parser")
+        quote_of_the_day_author_div = soup.find("div", class_="entry-content")
+        p_elements = quote_of_the_day_author_div.find_all("p")
+        if len(p_elements) >= 3:
+            quote_author = p_elements[2].get_text().strip()
+            return quote_author
+        else:
+            return "Author not available"
+    except Exception as e:
+        print("Error occurred while fetching the quote:", e)
+        return "Author not available"
 
-    # Calculate the phase of the moon
-    moon.compute(observer)
+def show_moons_image():
+    # Load the new image
+    with Image.open("moon_phases_image.jpg") as moonsImage:
+        photo = ImageTk.PhotoImage(moonsImage)
 
-    # Determine the moon phase name based on the moon's phase
-    phase = moon.phase / 100  # Get the moon's phase as a fraction of the cycle
-
-    if 0 <= phase < 0.03 or 0.97 <= phase <= 1:
-        return "New Moon"
-    elif 0.03 <= phase < 0.125:
-        return "Waxing Crescent"
-    elif 0.125 <= phase < 0.25:
-        return "First Quarter Waxing Crescent"
-    elif 0.25 <= phase < 0.375:
-        return "First Quarter Waxing Gibbous"
-    elif 0.375 <= phase < 0.625:
-        return "Waxing Gibbous"
-    elif 0.625 <= phase < 0.75:
-        return "Full Moon"
-    elif 0.75 <= phase < 0.875:
-        return "LastQuarter Waning Gibbous"
-    elif 0.875 <= phase < 0.97:
-        return "Waning Gibbous"
-
-    return "Unknown Phase"  # If the moon phase cannot be determined
-
+    # Create a label to display the new image
+    moons_image_label = tk.Label(window, image=photo, bg="black")
+    moons_image_label.image = photo  # Store reference to avoid garbage collection
+    moons_image_label.place(relx=0, rely=0, anchor="nw")
 
 def get_days_until_full_moon():
     now = datetime.today()
@@ -139,9 +158,24 @@ def save_text():
     status_label.place(relx=0.5, rely=0.98, anchor="center")
 
 
+def horoscope(zodiac_sign: int, day: str) -> str:
+    url = (
+        "https://www.horoscope.com/us/horoscopes/general/"
+        f"horoscope-general-daily-{day}.aspx?sign={zodiac_sign}"
+    )
+    soup = BeautifulSoup(requests.get(url).content, "html.parser")
+    horoscope_text = soup.find("div", class_="main-horoscope").p
+    # Remove the date portion from the horoscope text
+    for strong_tag in horoscope_text.find_all("strong"):
+        strong_tag.extract()
+    horoscope_text = horoscope_text.get_text().strip()
+    # Remove the leading " - " prefix
+    horoscope_text = horoscope_text.lstrip(" - ")
+    return horoscope_text
+
 # Create the main window
 window = tk.Tk()
-window.title("Hibernate App")
+window.title("Nighty Night")
 
 # Set the window background to black
 window.configure(bg="black")
@@ -170,6 +204,9 @@ with Image.open("background.png") as image:
 bg_label = tk.Label(window, image=photo, bg="black")
 bg_label.place(x=0, y=0, relwidth=1, relheight=1)
 
+# Call the function to show the new image and "Image" label when the application starts
+show_moons_image()
+
 # Set the custom icon for the window
 icon_path = "icon.ico"
 window.iconbitmap(icon_path)
@@ -181,48 +218,86 @@ style.configure(
     font=("Courier", 10),
     padding=2,
     borderwidth=0,
-    relief="solid",
+    relief="flat",
     foreground="black",
-    background="white",
-)  # Change text color to black
+    background="black",
+    highlightbackground="white",
+)
+
+# Create a custom style for the button
+style2 = ttk.Style()
+style2.configure(
+    "main.TButton",
+    font=("Courier", 8),
+    padding=2,
+    borderwidth=0,
+    relief="flat",
+    overrelief="raised",
+    foreground="black",
+    background="black",
+    highlightbackground="black",
+)
+
+# Create a label and entry for the delay time
+delay_label = tk.Label(window, text="Hibernate Delay (minutes):", font=("Courier", 11), bg="black", fg="white")
+delay_label.place(relx=0.04, rely=0.921, anchor="w")
+
+entry = tk.Entry(window, font=("Courier", 10), justify="center", width=8)
+entry.place(relx=0.395, rely=0.92, anchor="w")
 
 # Create a button with the custom style
-button = ttk.Button(window, text="Activate", command=schedule_hibernate, style="Black.TButton")
-button.place(relx=0.5, rely=0.9, anchor="center")
+button = ttk.Button(window, text="Activate", command=schedule_hibernate, style="main.TButton")
+button.place(relx=0.51, rely=0.92, anchor="w")
 
 # Create a button to cancel hibernation
 cancel_button = ttk.Button(window, text="Cancel", command=cancel_hibernate, style="Black.TButton")
-
-# Create a label and entry for the delay time
-delay_label = tk.Label(window, text="Hibernate Delay (minutes):", font=("Courier", 13), bg="black", fg="white")
-delay_label.place(relx=0.5, rely=0.78, anchor="center")
-
-entry = tk.Entry(window, font=("Courier", 12), justify="center")
-entry.place(relx=0.5, rely=0.83, anchor="center")
 
 # Create a label for the timer
 timer_label = tk.Label(window, text="", font=("Courier", 14), bg="black", fg="white")
 
 # Create a label for the welcome message
 welcome_label = tk.Label(window, text="Hello JP", font=("Courier", 14), bg="black", fg="white")
-welcome_label.place(relx=0.04, rely=0.02, anchor="nw")
+welcome_label.place(relx=0.04, rely=0.22, anchor="nw")
+
+# Create a label for the Daily Horoscope Title
+horoscope_title = tk.Label(
+    window, text="Daily Horoscope:", font=("Courier", 10), bg="black", fg="white"
+)
+horoscope_title.place(relx=0.96, rely=0.23, anchor="ne")
 
 # Create a label for the daily horoscope
 horoscope_label = tk.Label(window, text="", font=("Courier", 9), bg="black", fg="white", wraplength=350, anchor="e", justify="left")
-horoscope_label.place(relx=0.96, rely=0.02, anchor="ne")
+horoscope_label.place(relx=0.96, rely=0.27, anchor="ne")
 
+# Create a label for the daily quote Title
+quote_title = tk.Label(
+    window, text="Quote of the day:", font=("Courier", 10), bg="black", fg="white"
+)
+quote_title.place(relx=0.96, rely=0.46, anchor="ne")
+
+# Create a label for the daily quote
+quote_label = tk.Label(window, text="", font=("Courier", 9), bg="black", fg="white", wraplength=350, anchor="e", justify="left")
+quote_label.place(relx=0.96, rely=0.5, anchor="ne")
+
+# Create a label for the daily quote author
+quote_author_label = tk.Label(window, text="", font=("Courier", 9), bg="black", fg="white", wraplength=300, anchor="e", justify="left")
+quote_author_label.place(relx=0.96, rely=0.74, anchor="ne")
 
 # Create a label for the current time and date
 time_label = tk.Label(window, text="", font=("Courier", 10), bg="black", fg="white")
-time_label.place(relx=0.04, rely=0.1, anchor="w")
+time_label.place(relx=0.04, rely=0.28, anchor="w")
 
 # Create a label for the moon phase
 moon_phase_label = tk.Label(window, text="", font=("Courier", 10), bg="black", fg="white")
-moon_phase_label.place(relx=0.04, rely=0.14, anchor="w")
+moon_phase_label.place(relx=0.04, rely=0.34, anchor="nw")
+
+# Create a label for the moon age
+moon_age_label = tk.Label(window, text="", font=("Courier", 10), bg="black", fg="white")
+moon_age_label.place(relx=0.04, rely=0.38, anchor="nw")
 
 # Create a label for the days until full moon
 full_moon_label = tk.Label(window, text="", font=("Courier", 10), bg="black", fg="white")
-full_moon_label.place(relx=0.04, rely=0.18, anchor="w")
+full_moon_label.place(relx=0.04, rely=0.42, anchor="nw")
 
 # Load the animated GIF image
 animation_frames = []
@@ -234,32 +309,31 @@ with Image.open("animation.gif") as image:
         frame_image = ImageTk.PhotoImage(image.copy())
         animation_frames.append(frame_image)
 
-# Create a label to display the animated GIF
-animation_label = tk.Label(window, bg="black")
-animation_label.place(relx=0.5, rely=0.4, anchor="center")
-
 # Function to animate the GIF frames
 def animate_gif(frame=0):
     animation_label.config(image=animation_frames[frame])
     frame = (frame + 1) % len(animation_frames)
     window.after(100, animate_gif, frame)
 
+# Create a label to display the animated GIF
+animation_label = tk.Label(window, bg="black")
+animation_label.place(relx=0.1, rely=0.51, anchor="nw")
+
 # Start animating the GIF
 animate_gif()
 
 # Create a label and entry for the thought of the day
 thought_label = tk.Label(
-    window, text="Thought of the day:", font=("Courier", 13), bg="black", fg="white"
-)
-thought_label.place(relx=0.5, rely=0.57, anchor="center")
+    window, text="Thought of the day:", font=("Courier", 11), bg="black", fg="white")
+thought_label.place(relx=0.04, rely=0.87, anchor="sw")
 
 # Create a text entry field
-text_entry = tk.Text(window, height=3, width=40)
-text_entry.place(relx=0.5, rely=0.64, anchor="center")
+text_entry = tk.Text(window, height=2, width=40)
+text_entry.place(relx=0.31, rely=0.85, anchor="w")
 
 # Create a button to save the text
 save_button = ttk.Button(window, text="Save", command=save_text, style="Black.TButton")
-save_button.place(relx=0.5, rely=0.72, anchor="center")
+save_button.place(relx=0.785, rely=0.85, anchor="w")
 
 # Create a label to show the status
 status_label = tk.Label(window, text="")
@@ -274,29 +348,22 @@ delay = 0
 start_time = 0
 timer_id = None
 
-def horoscope(zodiac_sign: int, day: str) -> str:
-    url = (
-        "https://www.horoscope.com/us/horoscopes/general/"
-        f"horoscope-general-daily-{day}.aspx?sign={zodiac_sign}"
-    )
-    soup = BeautifulSoup(requests.get(url).content, "html.parser")
-    horoscope_text = soup.find("div", class_="main-horoscope").p
-    # Remove the date portion from the horoscope text
-    for strong_tag in horoscope_text.find_all("strong"):
-        strong_tag.extract()
-    horoscope_text = horoscope_text.get_text().strip()
-    # Remove the leading " - " prefix
-    horoscope_text = horoscope_text.lstrip(" - ")
-    return horoscope_text
-
 # Get the horoscope for Sagittarius
 horoscope_text = horoscope(9, "today")  # Set Sagittarius as the default sign and "today" as the day
 # Update the horoscope label
 horoscope_label.config(text=f"{horoscope_text}")
-# Calculate the moon phase
-moon_phase = get_moon_phase(ephem.now())
-# Update the moon phase label
+# Get the quote of the day and update label
+quote_of_the_day = get_quote_of_the_day()
+quote_label.config(text=f"{quote_of_the_day}")
+# Get the quote of the day author and update label
+quote_author = get_quote_of_the_day_author()
+quote_author_label.config(text=f"{quote_author}")
+# Get the current moon phase and update the moon phase label
+moon_phase = get_current_moon_phase()
 moon_phase_label.config(text=f"Moon Phase: {moon_phase}")
+# Get the current moon age and update the moon age label
+moon_age = get_current_moon_age()
+moon_age_label.config(text=f"Moon Age: {moon_age}")
 # Calculate the days until the next full moon
 days_until_full_moon = get_days_until_full_moon()
 # Update the days until full moon label
