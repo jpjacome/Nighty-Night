@@ -9,6 +9,40 @@ from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 
+# Create the main window
+window1 = tk.Tk()
+window1.overrideredirect(True)  # Remove window border and title bar
+
+# Set the window background to black
+window1.configure(bg="black")
+
+# Prevent the window from being resizable
+window1.resizable(False, False)
+
+# Get the screen width and height
+screen_width = window1.winfo_screenwidth()
+screen_height = window1.winfo_screenheight()
+
+# Calculate the window position
+window1_width = 500  # Set the desired window width
+window1_height = 500  # Set the desired window height
+x = (screen_width - window1_width) // 2
+y = (screen_height - window1_height) // 2
+
+# Set the window size and position
+window1.geometry(f"{window1_width}x{window1_height}+{x}+{y}")
+
+# Load the image
+image_path = "opening-screen.png"  # Replace with the actual image path
+with Image.open(image_path) as image1:
+    photo = ImageTk.PhotoImage(image1)
+
+# Create a label to hold the image
+image1_label = tk.Label(window1, image=photo)
+image1_label.pack()
+
+# Display the image
+window1.update()
 
 # File path to store the last activated number
 STORED_DATA_FILE = os.path.join(os.getcwd(), "last_activated_number.txt")
@@ -92,33 +126,26 @@ def get_current_moon_age():
     return moon_age
 
 def get_quote_of_the_day():
-    url = "https://thedailyidea.org/daily-philosophy-quote/"
+    url = "https://www.philosophybits.com"
     try:
         soup = BeautifulSoup(requests.get(url).content, "html.parser")
-        quote_of_the_day_div = soup.find("div", class_="entry-content")
-        p_elements = quote_of_the_day_div.find_all("p")
-        if len(p_elements) >= 2:
-            quote_of_the_day = p_elements[1].get_text().strip()
-            return quote_of_the_day
-        else:
-            return "Quote not available"
+        quote_element = soup.find("blockquote", class_="medium")
+        quote_text = quote_element.get_text().strip()
+        return quote_text
     except Exception as e:
         print("Error occurred while fetching the quote:", e)
         return "Quote not available"
 
 def get_quote_of_the_day_author():
-    url = "https://thedailyidea.org/daily-philosophy-quote/"
+    url = "https://www.philosophybits.com"
     try:
         soup = BeautifulSoup(requests.get(url).content, "html.parser")
-        quote_of_the_day_author_div = soup.find("div", class_="entry-content")
-        p_elements = quote_of_the_day_author_div.find_all("p")
-        if len(p_elements) >= 3:
-            quote_author = p_elements[2].get_text().strip()
-            return quote_author
-        else:
-            return "Author not available"
+        quote_element = soup.find("blockquote", class_="medium")
+        author_element = quote_element.find_next_sibling("div", class_="source")
+        author_text = author_element.get_text().strip()
+        return author_text
     except Exception as e:
-        print("Error occurred while fetching the quote:", e)
+        print("Error occurred while fetching the author:", e)
         return "Author not available"
 
 def show_moons_image():
@@ -172,6 +199,11 @@ def horoscope(zodiac_sign: int, day: str) -> str:
     # Remove the leading " - " prefix
     horoscope_text = horoscope_text.lstrip(" - ")
     return horoscope_text
+
+time.sleep(4)  # Display the image for 3 seconds
+
+# Close the image window
+window1.destroy()
 
 # Create the main window
 window = tk.Tk()
@@ -271,17 +303,17 @@ horoscope_label.place(relx=0.96, rely=0.27, anchor="ne")
 
 # Create a label for the daily quote Title
 quote_title = tk.Label(
-    window, text="Quote of the day:", font=("Courier", 10), bg="black", fg="white"
+    window, text="Latest Quote:", font=("Courier", 10), bg="black", fg="white"
 )
-quote_title.place(relx=0.96, rely=0.46, anchor="ne")
+quote_title.place(relx=0.96, rely=0.5, anchor="ne")
 
 # Create a label for the daily quote
 quote_label = tk.Label(window, text="", font=("Courier", 9), bg="black", fg="white", wraplength=350, anchor="e", justify="left")
-quote_label.place(relx=0.96, rely=0.5, anchor="ne")
+quote_label.place(relx=0.96, rely=0.54, anchor="ne")
 
 # Create a label for the daily quote author
 quote_author_label = tk.Label(window, text="", font=("Courier", 9), bg="black", fg="white", wraplength=300, anchor="e", justify="left")
-quote_author_label.place(relx=0.96, rely=0.74, anchor="ne")
+quote_author_label.place(relx=0.96, rely=0.54 + (quote_label.winfo_reqheight() / window.winfo_reqheight()) + 0.01, anchor="ne")
 
 # Create a label for the current time and date
 time_label = tk.Label(window, text="", font=("Courier", 10), bg="black", fg="white")
